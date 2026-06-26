@@ -1,0 +1,62 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE "Kit" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "committee" TEXT NOT NULL,
+  "committeeDescription" TEXT,
+  "country" TEXT NOT NULL,
+  "topic" TEXT NOT NULL,
+  "notes" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "Intel" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "kitId" TEXT NOT NULL,
+  "summary" TEXT NOT NULL,
+  "priorities" TEXT NOT NULL,
+  "redLines" TEXT NOT NULL,
+  "allies" TEXT NOT NULL,
+  "risks" TEXT NOT NULL,
+  "sources" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  CONSTRAINT "Intel_kitId_fkey" FOREIGN KEY ("kitId") REFERENCES "Kit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "Relation" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "kitId" TEXT NOT NULL,
+  "country" TEXT NOT NULL,
+  "stance" TEXT NOT NULL,
+  "confidence" INTEGER NOT NULL DEFAULT 50,
+  "rationale" TEXT NOT NULL,
+  "bloc" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  CONSTRAINT "Relation_kitId_fkey" FOREIGN KEY ("kitId") REFERENCES "Kit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "Speech" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "kitId" TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "body" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Speech_kitId_fkey" FOREIGN KEY ("kitId") REFERENCES "Kit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "Export" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "kitId" TEXT NOT NULL,
+  "filename" TEXT NOT NULL,
+  "path" TEXT NOT NULL,
+  "driveFileId" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Export_kitId_fkey" FOREIGN KEY ("kitId") REFERENCES "Kit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "Intel_kitId_key" ON "Intel"("kitId");

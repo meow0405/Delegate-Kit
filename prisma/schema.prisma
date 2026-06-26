@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Kit {
+  id        String     @id @default(cuid())
+  name      String
+  committee String
+  committeeDescription String?
+  country   String
+  topic     String
+  notes     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  intel     Intel?
+  relations Relation[]
+  speeches  Speech[]
+  exports   Export[]
+}
+
+model Intel {
+  id         String   @id @default(cuid())
+  kitId      String   @unique
+  summary    String
+  priorities String
+  redLines   String
+  allies     String
+  risks      String
+  sources    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  kit        Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+}
+
+model Relation {
+  id         String   @id @default(cuid())
+  kitId      String
+  country    String
+  stance     String
+  confidence Int      @default(50)
+  rationale  String
+  bloc       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  kit        Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+}
+
+model Speech {
+  id        String   @id @default(cuid())
+  kitId     String
+  type      String
+  style     String?
+  seconds   Int?
+  focus     String?
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  kit       Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+}
+
+model Export {
+  id          String   @id @default(cuid())
+  kitId       String
+  filename    String
+  path        String
+  driveFileId String?
+  createdAt   DateTime @default(now())
+  kit         Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+}
