@@ -1,11 +1,15 @@
 "use client";
 
 import { Copy, Edit3, Mic2, RefreshCw, RotateCcw, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ActionProgress, ErrorNotice } from "@/components/ui/ActionStatus";
+import { AiFeedback } from "@/components/ui/AiFeedback";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { inputClass } from "@/components/ui/Field";
 import { useDelegateStore } from "@/lib/store/delegateStore";
 import type { SpeechDraft } from "@/lib/ai/schemas";
+import { getActionError, getNetworkError } from "@/lib/ui/apiError";
 
 type SpeechMode = "gsl" | "mod";
 type SpeechStyle = "formal" | "dramatic" | "poetic" | "diplomatic" | "assertive";
@@ -52,6 +56,8 @@ export function SpeechGenerator() {
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
+  const requestRef = useRef<AbortController | null>(null);
+  const [previousSpeech, setPreviousSpeech] = useState<SpeechDraft>();
   const savedSpeeches = useMemo(() => kit?.speeches ?? [], [kit?.speeches]);
 
   async function generate(overrides?: Partial<{ mode: SpeechMode; style: SpeechStyle; seconds: number; modTopic: string }>) {
@@ -66,6 +72,9 @@ export function SpeechGenerator() {
       return;
     }
 
+    requestRef.current?.abort();
+    requestRef.current = new AbortController();
+    setPreviousSpeech(speech);
     setBusy(true);
     setError(undefined);
     try {
@@ -85,19 +94,21 @@ export function SpeechGenerator() {
           seconds: nextSeconds,
           modTopic: nextMode === "mod" ? nextModTopic : undefined,
         }),
+        signal: requestRef.current.signal,
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error ?? "Speech route failed.");
+        throw new Error(await getActionError(response, "generate the speech"));
       }
 
       const generated = await response.json();
       setSpeech(generated);
       addSavedSpeech(generated);
+      setDraftTitle(generated.title);
+      setDraftBody(generated.body);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not generate speech.");
+      setError(err instanceof DOMException && err.name === "AbortError" ? undefined : err instanceof Error ? err.message : getNetworkError(err, "generate the speech"));
     } finally {
       setBusy(false);
     }
@@ -128,13 +139,13 @@ export function SpeechGenerator() {
         body: JSON.stringify({ title: draftTitle, body: draftBody }),
       });
 
-      if (!response.ok) throw new Error("Could not save speech edits.");
+      if (!response.ok) throw new Error(await getActionError(response, "save the speech edits"));
       const data = await response.json();
       setSpeech(data.speech);
       updateSavedSpeech(data.speech);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save speech edits.");
+      setError(err instanceof Error ? err.message : getNetworkError(err, "save the speech edits"));
     } finally {
       setSaving(false);
     }
@@ -145,10 +156,10 @@ export function SpeechGenerator() {
     setError(undefined);
     try {
       const response = await fetch(`/api/speeches/${item.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Could not delete saved speech.");
+      if (!response.ok) throw new Error(await getActionError(response, "delete the saved speech"));
       deleteSavedSpeech(item.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete saved speech.");
+      setError(err instanceof Error ? err.message : getNetworkError(err, "delete the saved speech"));
     }
   }
 
@@ -238,18 +249,18 @@ export function SpeechGenerator() {
               />
             </label>
 
-            {error ? <p className="text-sm text-rose-500">{error}</p> : null}
-
             <Button variant="secondary" onClick={() => generate()} disabled={!kit || busy}>
               {busy ? <RefreshCw size={16} className="animate-spin" /> : <Mic2 size={16} />}
-              Generate and save
+              {busy ? "Writing speech" : "Generate and save speech"}
             </Button>
+            <ActionProgress active={busy} label="Writing a portfolio-specific speech" onCancel={() => requestRef.current?.abort()} />
+            <ErrorNotice message={error} onRetry={() => generate()} />
           </div>
 
           <div className="surface-tile rounded-lg p-4">
             <h3 className="text-sm font-bold text-ink">Saved speeches</h3>
             {savedSpeeches.length ? (
-              <div className="mt-3 grid max-h-[420px] gap-2 overflow-y-auto pr-1">
+              <div className="mt-3 grid max-h-[420px] gap-2 overflow-y-auto pr-1" tabIndex={0} aria-label="Saved speeches list">
                 {savedSpeeches.map((item) => (
                   <article key={item.id ?? item.title} className="rounded-md border border-[var(--line)] p-3">
                     <button type="button" className="block text-left text-sm font-bold text-ink" onClick={() => openSpeech(item)}>
@@ -277,21 +288,17 @@ export function SpeechGenerator() {
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm leading-6 text-muted">No saved speeches yet. Every generated speech will appear here automatically.</p>
+              <div className="mt-3"><EmptyState title="No saved speeches yet" description="Generate a GSL or moderated caucus speech and it will be saved here automatically." action={<Button variant="secondary" onClick={() => generate()} disabled={!kit || busy}>Generate first speech</Button>} /></div>
             )}
           </div>
         </div>
 
-        <article className="surface-tile rounded-lg p-4">
+        <article className={`surface-tile rounded-lg p-4 ${speech ? "ai-surface" : ""}`}>
           {speech ? (
             <>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  {editing ? (
-                    <input className={inputClass} value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
-                  ) : (
-                    <h3 className="text-sm font-bold text-ink">{speech.title}</h3>
-                  )}
+                  <input aria-label="Speech title" className={`${inputClass} w-full font-bold`} value={draftTitle || speech.title} onChange={(event) => { setDraftTitle(event.target.value); setEditing(true); }} />
                   <p className="mt-2 text-xs text-soft">
                     {speech.type ?? mode} | {speech.style ?? style} | {speech.seconds ?? seconds}s target | {activeWordCount} words | est. {activeEstimate}s
                   </p>
@@ -313,32 +320,14 @@ export function SpeechGenerator() {
                 </div>
               </div>
 
-              {editing ? (
-                <textarea className={`${inputClass} mt-4 min-h-80 w-full leading-6`} value={draftBody} onChange={(event) => setDraftBody(event.target.value)} />
-              ) : (
-                <div className="mt-4 grid gap-3">
-                  {speech.body.split(/\n{2,}/).map((paragraph, index) => {
-                    const trimmed = paragraph.trim();
-                    const isQuote = trimmed.startsWith('"') && trimmed.endsWith('"');
-
-                    return isQuote ? (
-                      <blockquote
-                        key={`${trimmed}-${index}`}
-                        className="border-l-2 border-[var(--accent)] bg-[var(--tile)] px-4 py-3 font-serif text-lg italic leading-7 text-ink"
-                      >
-                        {trimmed}
-                      </blockquote>
-                    ) : (
-                      <p key={`${trimmed}-${index}`} className="text-sm leading-6 text-muted">
-                        {trimmed}
-                      </p>
-                    );
-                  })}
-                </div>
-              )}
+              <label className="mt-4 grid gap-2 text-xs font-semibold text-soft">
+                <span>Speech text</span>
+                <textarea className={`${inputClass} min-h-80 w-full resize-y leading-6`} value={draftBody || speech.body} onChange={(event) => { setDraftBody(event.target.value); setEditing(true); }} />
+              </label>
+              <AiFeedback label="Generated speech" onUndo={previousSpeech ? () => openSpeech(previousSpeech) : undefined} />
             </>
           ) : (
-            <p className="text-sm leading-6 text-muted">Generate a speech or open one from the saved menu.</p>
+            <EmptyState title="No speech selected" description="Generate a new speech or open one from the saved list to read and edit it here." />
           )}
         </article>
       </div>

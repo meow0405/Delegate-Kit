@@ -25,6 +25,7 @@ type DelegateState = {
   speech?: SpeechDraft;
   driveToken?: string;
   setDraft: (draft: Partial<DraftKit>) => void;
+  resetDraft: () => void;
   setKits: (kits: Kit[]) => void;
   setActiveKit: (kit?: Kit) => void;
   setIntel: (intel: CountryIntel) => void;
@@ -42,16 +43,17 @@ type DelegateState = {
 export const useDelegateStore = create<DelegateState>((set) => ({
   kits: [],
   draft: {
-    name: "Crisis-ready MUN",
-    committee: "unga",
+    name: "",
+    committee: "",
     customCommitteeName: "",
     customCommitteeDescription: "",
     country: "",
-    topic: "Responsible AI governance",
-    roster: ["Brazil", "France", "Germany", "Japan", "Kenya", "Mexico", "South Africa", "United Kingdom", "United States"],
+    topic: "",
+    roster: [],
   },
   relations: [],
   setDraft: (draft) => set((state) => ({ draft: { ...state.draft, ...draft } })),
+  resetDraft: () => set({ draft: { name: "", committee: "", customCommitteeName: "", customCommitteeDescription: "", country: "", topic: "", roster: [] } }),
   setKits: (kits) => set({ kits }),
   setActiveKit: (kit) => set({ activeKit: kit }),
   setIntel: (intel) => set({ intel }),

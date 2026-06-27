@@ -13,4 +13,6 @@ export type Kit = {
   relations?: RelationSuggestion[];
   speeches?: SpeechDraft[];
   exports?: { id: string; filename: string; path: string; driveFileId?: string | null }[];
+  createdAt?: string;
+  updatedAt?: string;
 };

@@ -178,6 +178,7 @@ export async function generateSpeech(input: {
   seconds?: number;
   modTopic?: string;
   style?: string;
+  researchContext?: string;
 }) {
   const type = input.type === "mod" ? "moderated caucus speech" : "GSL speech";
   const style = normalizeStyle(input.style);
@@ -198,6 +199,8 @@ Target length: about ${targetWords} spoken words
 Stance to reflect exactly: ${input.stance ?? fallback.talkingPoints[0]}
 Chosen style: ${style}
 Style direction: ${guide.tone}
+Imported delegate research:
+${input.researchContext || "No uploaded research sources."}
 
 Requirements:
 - Make it fit the time limit with a full delegate pace. Spoken word count must be between ${Math.max(25, Math.round(targetWords * 0.86))} and ${Math.round(targetWords * 1.18)} words.

@@ -1,8 +1,9 @@
 import { FolderOpen, Gavel, Landmark } from "lucide-react";
+import Link from "next/link";
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="brand-badge inline-flex items-center gap-3 rounded-lg px-3 py-2.5">
+    <Link href="/dashboard" className="brand-badge focus-ring inline-flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:-translate-y-0.5" aria-label="Open saved kits" title="Open saved kits">
       <div className="grid size-10 place-items-center rounded-lg bg-[var(--foreground)] text-[var(--background)] shadow-sm">
         {compact ? <FolderOpen size={22} /> : <Gavel size={22} />}
       </div>
@@ -10,7 +11,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <p className="text-[0.78rem] font-semibold uppercase tracking-[0.2em]">Delegate Kit</p>
         <p className="mt-0.5 text-xs text-muted">MUN command folder</p>
       </div>
-    </div>
+    </Link>
   );
 }
 

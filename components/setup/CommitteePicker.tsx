@@ -20,7 +20,7 @@ export function CommitteePicker({
   onCustomDescriptionChange: (value: string) => void;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid max-h-[min(58vh,640px)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-4" tabIndex={0} aria-label="Committee options">
       <button
         type="button"
         onClick={() => onChange("custom")}

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { suggestRelations } from "@/lib/ai/relationsSuggest";
 import { assertExternalAiEnabled, enforcePromptBudget, parseJsonBody, publicErrorResponse, rateLimit } from "@/lib/security/api";
+import { getResearchContext } from "@/lib/research/context";
 
 const requestSchema = z.object({
   kitId: z.string().trim().max(120).optional(),
@@ -18,7 +19,8 @@ export async function POST(request: Request) {
     assertExternalAiEnabled();
     const body = await parseJsonBody(request, requestSchema);
     enforcePromptBudget(body);
-    const suggestions = await suggestRelations(body);
+    const researchContext = await getResearchContext(body.kitId);
+    const suggestions = await suggestRelations({ ...body, researchContext });
 
     if (body.kitId) {
       await prisma.relation.deleteMany({ where: { kitId: body.kitId } });

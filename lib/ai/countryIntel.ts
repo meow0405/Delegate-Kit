@@ -5,6 +5,7 @@ export async function getCountryIntel(input: {
   country: string;
   committee: string;
   topic: string;
+  researchContext?: string;
 }) {
   const fallback: CountryIntel = {
     summary: `${input.country} should anchor its position on ${input.topic} in portfolio interests, mandate constraints, alliances, and workable negotiating language.`,
@@ -19,6 +20,8 @@ export async function getCountryIntel(input: {
     `Portfolio: ${input.country}
 Committee: ${input.committee}
 Topic: ${input.topic}
+Imported delegate research:
+${input.researchContext || "No uploaded research sources."}
 
 Return JSON matching:
 {

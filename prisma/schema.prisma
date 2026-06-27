@@ -21,6 +21,20 @@ model Kit {
   relations Relation[]
   speeches  Speech[]
   exports   Export[]
+  researchSources ResearchSource[]
+}
+
+model ResearchSource {
+  id          String   @id @default(cuid())
+  kitId       String
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  content     String
+  createdAt   DateTime @default(now())
+  kit         Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+
+  @@index([kitId, createdAt])
 }
 
 model Intel {

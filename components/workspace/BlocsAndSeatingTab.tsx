@@ -1,10 +1,12 @@
 "use client";
 
 import { RefreshCw, Wand2 } from "lucide-react";
-import { useMemo } from "react";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ActionProgress, ErrorNotice } from "@/components/ui/ActionStatus";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDelegateStore } from "@/lib/store/delegateStore";
+import { getActionError, getNetworkError } from "@/lib/ui/apiError";
 import type { RelationSuggestion } from "@/lib/ai/schemas";
 
 const stanceOrder: Record<RelationSuggestion["stance"], number> = {
@@ -21,6 +23,8 @@ export function BlocsAndSeatingTab() {
   const relations = useDelegateStore((state) => state.relations);
   const setRelations = useDelegateStore((state) => state.setRelations);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const requestRef = useRef<AbortController | null>(null);
   const roster = kit?.roster?.length ? kit.roster : draft.roster;
   const rows = useMemo(
     () => (relations.length ? relations : (kit?.relations as RelationSuggestion[] | undefined) ?? []),
@@ -40,7 +44,10 @@ export function BlocsAndSeatingTab() {
 
   async function generateRelations() {
     if (!kit) return;
+    requestRef.current?.abort();
+    requestRef.current = new AbortController();
     setBusy(true);
+    setError(undefined);
     try {
       const response = await fetch("/api/ai/relations", {
         method: "POST",
@@ -52,9 +59,14 @@ export function BlocsAndSeatingTab() {
           topic: kit.topic,
           roster,
         }),
+        signal: requestRef.current.signal,
       });
+      if (!response.ok) throw new Error(await getActionError(response, "generate coalition blocs"));
       const data = await response.json();
+      if (!Array.isArray(data.suggestions)) throw new Error("The model returned an incomplete bloc map. Try again with a shorter roster.");
       setRelations(data.suggestions ?? []);
+    } catch (caught) {
+      setError(caught instanceof DOMException && caught.name === "AbortError" ? undefined : caught instanceof Error ? caught.message : getNetworkError(caught, "generate coalition blocs"));
     } finally {
       setBusy(false);
     }
@@ -70,9 +82,11 @@ export function BlocsAndSeatingTab() {
           </div>
           <Button onClick={generateRelations} disabled={!kit || busy}>
             {busy ? <RefreshCw size={16} className="animate-spin" /> : <Wand2 size={16} />}
-            Generate blocs
+            {busy ? "Building blocs" : "Generate blocs"}
           </Button>
         </div>
+        <ActionProgress active={busy} label="Building coalition blocs" onCancel={() => requestRef.current?.abort()} />
+        <ErrorNotice message={error} onRetry={generateRelations} />
         {rows.length ? (
           <div className="mt-5 grid gap-4">
             {Object.entries(blocs).map(([bloc, members]) => (
@@ -95,10 +109,7 @@ export function BlocsAndSeatingTab() {
             ))}
           </div>
         ) : (
-          <div className="surface-tile mt-5 rounded-lg p-5">
-            <p className="text-sm font-semibold text-ink">No blocs yet.</p>
-            <p className="mt-2 text-sm leading-6 text-muted">Generate the relations matrix first, then blocs and seating signals will appear here.</p>
-          </div>
+          <div className="mt-5"><EmptyState title="No coalition blocs yet" description="Generate relations to group portfolios by stance, policy, and implementation interests." action={<Button onClick={generateRelations} disabled={!kit || busy}>Generate blocs</Button>} /></div>
         )}
       </div>
       <div className="glass-strong rounded-lg p-5">
@@ -115,9 +126,7 @@ export function BlocsAndSeatingTab() {
             ))}
           </div>
         ) : (
-          <div className="surface-tile mt-5 rounded-lg p-5">
-            <p className="text-sm text-muted">Seating suggestions will render after relation data exists.</p>
-          </div>
+          <div className="mt-5"><EmptyState title="No seating signal yet" description="Seating suggestions appear after relation data has been generated." /></div>
         )}
       </div>
     </section>

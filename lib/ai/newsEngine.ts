@@ -4,7 +4,7 @@ import { generateJson } from "./provider";
 
 const parser = new Parser();
 
-export async function buildNewsDigest(query: string) {
+export async function buildNewsDigest(query: string, researchContext?: string) {
   const fallback: NewsDigest = {
     query,
     items: [
@@ -31,7 +31,10 @@ export async function buildNewsDigest(query: string) {
     return newsDigestSchema.parse({ query, items });
   } catch {
     return generateJson(
-      `Create a compact news research digest for this Model UN query: ${query}. Return JSON with query and items.`,
+      `Create a compact news research digest for this Model UN query: ${query}.
+Imported delegate research:
+${researchContext || "No uploaded research sources."}
+Return JSON with query and items. Attribute imported claims to their source filenames.`,
       newsDigestSchema,
       fallback,
     );

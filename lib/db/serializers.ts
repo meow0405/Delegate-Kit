@@ -10,6 +10,8 @@ type PersistedKit = {
   country: string;
   topic: string;
   notes?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
   exports?: Kit["exports"];
   speeches?: Array<{
     id: string;
@@ -65,6 +67,8 @@ export function serializeKit(kit: PersistedKit): Kit {
 
   return {
     ...kit,
+    createdAt: kit.createdAt ? new Date(kit.createdAt).toISOString() : undefined,
+    updatedAt: kit.updatedAt ? new Date(kit.updatedAt).toISOString() : undefined,
     notes: notes.text ?? "",
     roster: notes.roster ?? [],
     speeches: (kit.speeches ?? []).map((speech) => ({

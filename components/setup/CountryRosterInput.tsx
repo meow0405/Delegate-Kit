@@ -8,9 +8,11 @@ import { getCountryMatch } from "@/lib/countries";
 export function CountryRosterInput({
   roster,
   onChange,
+  id,
 }: {
   roster: string[];
   onChange: (roster: string[]) => void;
+  id?: string;
 }) {
   const [bulkText, setBulkText] = useState(roster.join("\n"));
 
@@ -34,6 +36,7 @@ export function CountryRosterInput({
   return (
     <div className="grid gap-3">
       <textarea
+        id={id}
         className={`${inputClass} min-h-28 resize-y`}
         value={bulkText}
         onChange={(event) => {

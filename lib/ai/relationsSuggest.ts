@@ -170,6 +170,7 @@ export async function suggestRelations(input: {
   committee?: string;
   topic: string;
   roster: string[];
+  researchContext?: string;
 }) {
   const roster = Array.from(new Set(input.roster.map((item) => item.trim()).filter(Boolean)));
   const fallback: RelationSuggestion[] = roster.map((member, index) =>
@@ -186,6 +187,8 @@ export async function suggestRelations(input: {
 Committee: ${input.committee ?? "Use the active committee mandate."}
 Topic: ${input.topic}
 Roster: ${roster.join(", ")}
+Imported delegate research:
+${input.researchContext || "No uploaded research sources."}
 
 Build a relations matrix for Model UN.
 

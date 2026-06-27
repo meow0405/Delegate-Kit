@@ -8,9 +8,15 @@ import { inputClass } from "@/components/ui/Field";
 export function CountryAutocomplete({
   value,
   onChange,
+  id,
+  onBlur,
+  invalid,
 }: {
   value: string;
   onChange: (value: string) => void;
+  id?: string;
+  onBlur?: () => void;
+  invalid?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const matches = useMemo(() => {
@@ -26,10 +32,14 @@ export function CountryAutocomplete({
   return (
     <div className="relative">
       <input
+        id={id}
         className={inputClass}
         value={value}
         onFocus={() => setOpen(true)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onBlur={() => {
+          onBlur?.();
+          window.setTimeout(() => setOpen(false), 120);
+        }}
         onChange={(event) => {
           onChange(event.target.value);
           setOpen(true);
@@ -45,6 +55,7 @@ export function CountryAutocomplete({
         }}
         placeholder="Search portfolio, country, territory, party, or person"
         autoComplete="off"
+        aria-invalid={invalid}
       />
       {open ? (
         <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-[var(--line)] bg-[var(--panel-strong)] p-1 shadow-2xl">

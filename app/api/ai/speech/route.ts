@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { generateSpeech } from "@/lib/ai/speechGenerator";
 import { assertExternalAiEnabled, enforcePromptBudget, parseJsonBody, publicErrorResponse, rateLimit } from "@/lib/security/api";
+import { getResearchContext } from "@/lib/research/context";
 
 const requestSchema = z.object({
   kitId: z.string().trim().max(120).optional(),
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
     assertExternalAiEnabled();
     const body = await parseJsonBody(request, requestSchema);
     enforcePromptBudget(body);
-    const speech = await generateSpeech(body);
+    const researchContext = await getResearchContext(body.kitId);
+    const speech = await generateSpeech({ ...body, researchContext });
     const type = body.type ?? "opening speech";
     const style = body.style ?? "formal";
     const seconds = Number(body.seconds) || undefined;

@@ -9,6 +9,7 @@ const stanceInputSchema = z.object({
   committeeDescription: z.string().trim().optional().nullable(),
   roster: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
+  researchContext: z.string().optional(),
 });
 
 export type StanceInput = z.infer<typeof stanceInputSchema>;
@@ -29,6 +30,7 @@ Inputs:
 - Agenda: ${input.topic}
 - Roster context: ${input.roster?.length ? input.roster.join(", ") : "No roster provided."}
 - Delegate notes: ${input.notes || "No notes provided."}
+- Imported delegate research: ${input.researchContext || "No uploaded research sources."}
 
 Return strict JSON with this exact shape:
 {
